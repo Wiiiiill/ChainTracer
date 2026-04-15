@@ -14,11 +14,17 @@ const direction = ref<DirectionFilter>('ALL')
 
 const balances = ref<Record<string, { balance: string; decimals: number } | null>>({})
 
+const settings = ref<Awaited<ReturnType<typeof window.api.settingsGet>> | null>(null)
+
 const pageStart = ref(0)
 const pageLimit = 20
 
 async function loadAddresses(): Promise<void> {
   addresses.value = await window.api.addressesList()
+}
+
+async function loadSettings(): Promise<void> {
+  settings.value = await window.api.settingsGet()
 }
 
 async function refreshBalances(): Promise<void> {
@@ -62,9 +68,10 @@ async function refreshTransfers(reset = true): Promise<void> {
 }
 
 async function refreshAll(): Promise<void> {
-  // Avoid parallel Tronscan requests (easy to hit HTTP 429).
+  // Avoid parallel requests (easy to hit HTTP 429).
   await refreshTransfers(true)
   await refreshBalances()
+  await loadSettings()
 }
 
 async function addAddress(input: { address: string; label?: string }): Promise<void> {
@@ -94,6 +101,17 @@ async function updateLabel(input: { address: string; label?: string | null }): P
   }
 }
 
+async function updateSettings(
+  input: Parameters<typeof window.api.settingsUpdate>[0]
+): Promise<void> {
+  try {
+    await window.api.settingsUpdate(input)
+    await refreshAll()
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : String(e)
+  }
+}
+
 function openTx(txid: string): void {
   // Use Tronscan tx page; renderer will open externally via main process handler.
   window.open(`https://tronscan.org/#/transaction/${txid}`)
@@ -113,11 +131,13 @@ onMounted(async () => {
       :addresses="addresses"
       :balances="balances"
       :selected-address="selectedAddress"
+      :settings="settings"
       @refresh="refreshAll"
       @select-address="(a) => (selectedAddress = a)"
       @add-address="addAddress"
       @remove-address="removeAddress"
       @update-label="updateLabel"
+      @update-settings="updateSettings"
     />
 
     <TransfersTable

@@ -10,6 +10,8 @@ const api: WindowApi = {
   addressesUpdateLabel: (input) => ipcRenderer.invoke('addresses:updateLabel', input),
   transfersFetchUsdt: (input) => ipcRenderer.invoke('transfers:fetchUsdt', input),
   balancesUsdt: () => ipcRenderer.invoke('balances:usdt'),
+  settingsGet: () => ipcRenderer.invoke('settings:get'),
+  settingsUpdate: (input) => ipcRenderer.invoke('settings:update', input),
   clipboardCopy: (text) => ipcRenderer.invoke('clipboard:copy', { text })
 }
 

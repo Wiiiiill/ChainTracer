@@ -6,6 +6,10 @@ const props = defineProps<{
   addresses: WatchedAddress[]
   balances: Record<string, { balance: string; decimals: number } | null>
   selectedAddress: string | null
+  settings: {
+    dataSource: 'tronscan' | 'trongrid'
+    trongrid: { apiBase: string; hasApiKey: boolean }
+  } | null
 }>()
 
 const emit = defineEmits<{
@@ -14,12 +18,23 @@ const emit = defineEmits<{
   (e: 'addAddress', input: { address: string; label?: string }): void
   (e: 'removeAddress', address: string): void
   (e: 'updateLabel', input: { address: string; label?: string | null }): void
+  (
+    e: 'updateSettings',
+    input: {
+      dataSource?: 'tronscan' | 'trongrid'
+      trongrid?: { apiBase?: string; apiKey?: string | null }
+    }
+  ): void
 }>()
 
 const newAddress = ref('')
 const newLabel = ref('')
 
 const showAddModal = ref(false)
+const showSettingsModal = ref(false)
+
+const settingsDataSource = ref<'tronscan' | 'trongrid'>('tronscan')
+const tronGridApiKey = ref('')
 
 const toast = ref<string | null>(null)
 let toastTimer: number | null = null
@@ -32,6 +47,33 @@ function closeAddModal(): void {
   showAddModal.value = false
   newAddress.value = ''
   newLabel.value = ''
+}
+
+function openSettingsModal(): void {
+  if (props.settings) {
+    settingsDataSource.value = props.settings.dataSource
+    tronGridApiKey.value = ''
+  }
+  showSettingsModal.value = true
+}
+
+function closeSettingsModal(): void {
+  showSettingsModal.value = false
+  tronGridApiKey.value = ''
+}
+
+function saveSettings(): void {
+  emit('updateSettings', {
+    dataSource: settingsDataSource.value,
+    trongrid:
+      settingsDataSource.value === 'trongrid'
+        ? {
+            apiKey: tronGridApiKey.value.trim().length ? tronGridApiKey.value.trim() : null
+          }
+        : undefined
+  })
+
+  closeSettingsModal()
 }
 
 async function copyText(text: string): Promise<void> {
@@ -86,11 +128,48 @@ function onLabelBlur(address: string, label: string): void {
       <div class="title">Watched addresses</div>
       <div class="header-actions">
         <button class="btn primary" @click="openAddModal">Add</button>
+        <button class="btn" @click="openSettingsModal">Source</button>
         <button class="btn" @click="emit('refresh')">Refresh</button>
       </div>
     </div>
 
     <div v-if="toast" class="toast">{{ toast }}</div>
+
+    <div v-if="showSettingsModal" class="modal-backdrop" @click.self="closeSettingsModal">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">Data source</div>
+          <button class="btn" @click="closeSettingsModal">Close</button>
+        </div>
+
+        <div class="modal-body">
+          <label class="label">Provider</label>
+          <select v-model="settingsDataSource" class="select">
+            <option value="tronscan">Tronscan (default)</option>
+            <option value="trongrid">TronGrid</option>
+          </select>
+
+          <template v-if="settingsDataSource === 'trongrid'">
+            <div class="hint">
+              API Key is stored locally (Electron userData). It will not be committed to git.
+              <span v-if="props.settings?.trongrid.hasApiKey">(Currently set)</span>
+              <span v-else>(Not set)</span>
+            </div>
+            <input
+              v-model="tronGridApiKey"
+              class="input"
+              placeholder="TronGrid API Key"
+              autocomplete="off"
+            />
+          </template>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn" @click="closeSettingsModal">Cancel</button>
+          <button class="btn primary" @click="saveSettings">Save</button>
+        </div>
+      </div>
+    </div>
 
     <div v-if="showAddModal" class="modal-backdrop" @click.self="closeAddModal">
       <div class="modal">
@@ -345,10 +424,9 @@ function onLabelBlur(address: string, label: string): void {
   margin-bottom: 12px;
 }
 
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+.hint {
+  font-size: 12px;
+  color: var(--ev-c-text-2);
 }
 
 .toast {

@@ -3,8 +3,15 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { readWatchedAddresses, writeWatchedAddresses, type WatchedAddress } from './storage'
-import { readAppConfig } from './config'
-import { fetchAggregatedUsdtTransfers, fetchUsdtBalance } from './trongrid'
+import { readPublicSettings, readSettings, writeSettings } from './settings'
+import {
+  fetchAggregatedUsdtTransfers as fetchTronGridAggregated,
+  fetchUsdtBalance as fetchTronGridBalance
+} from './trongrid'
+import {
+  fetchAggregatedUsdtTransfers as fetchTronscanAggregated,
+  fetchUsdtBalance as fetchTronscanBalance
+} from './tronscan'
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -126,18 +133,69 @@ app.whenReady().then(() => {
     }
   )
 
+  ipcMain.handle('settings:get', async () => {
+    return await readPublicSettings()
+  })
+
+  ipcMain.handle(
+    'settings:update',
+    async (
+      _evt,
+      input: {
+        dataSource?: 'tronscan' | 'trongrid'
+        trongrid?: { apiBase?: string; apiKey?: string | null }
+      }
+    ) => {
+      const existing = await readSettings()
+
+      const dataSource: 'tronscan' | 'trongrid' =
+        input?.dataSource === 'trongrid' || input?.dataSource === 'tronscan'
+          ? input.dataSource
+          : existing.dataSource
+
+      const apiBaseRaw = input?.trongrid?.apiBase
+      const apiBase =
+        typeof apiBaseRaw === 'string' && apiBaseRaw.trim().length ? apiBaseRaw.trim() : undefined
+
+      const apiKeyIn = input?.trongrid?.apiKey
+      const apiKey =
+        apiKeyIn === null
+          ? undefined
+          : typeof apiKeyIn === 'string' && apiKeyIn.trim().length
+            ? apiKeyIn.trim()
+            : existing.trongrid?.apiKey
+
+      await writeSettings({
+        ...existing,
+        dataSource,
+        trongrid: {
+          ...existing.trongrid,
+          ...(apiBase ? { apiBase } : {}),
+          ...(apiKey !== undefined ? { apiKey } : {})
+        }
+      })
+
+      return await readPublicSettings()
+    }
+  )
+
   ipcMain.handle('balances:usdt', async () => {
     const watched = await readWatchedAddresses()
     const balances: Record<string, { balance: string; decimals: number } | null> = {}
 
-    const cfg = await readAppConfig()
+    const settings = await readSettings()
 
     for (const w of watched) {
-      balances[w.address] = await fetchUsdtBalance({
-        address: w.address,
-        apiBase: cfg.trongrid.apiBase,
-        apiKey: cfg.trongrid.apiKey
-      })
+      if (settings.dataSource === 'trongrid') {
+        balances[w.address] = await fetchTronGridBalance({
+          address: w.address,
+          apiBase: settings.trongrid?.apiBase || 'https://api.trongrid.io',
+          apiKey: settings.trongrid?.apiKey
+        })
+      } else {
+        balances[w.address] = await fetchTronscanBalance({ address: w.address })
+      }
+
       await sleep(200)
     }
 
@@ -155,15 +213,19 @@ app.whenReady().then(() => {
 
       if (watchedAddresses.length === 0) return []
 
-      const cfg = await readAppConfig()
+      const settings = await readSettings()
 
-      return await fetchAggregatedUsdtTransfers({
-        watchedAddresses,
-        start,
-        limit,
-        apiBase: cfg.trongrid.apiBase,
-        apiKey: cfg.trongrid.apiKey
-      })
+      if (settings.dataSource === 'trongrid') {
+        return await fetchTronGridAggregated({
+          watchedAddresses,
+          start,
+          limit,
+          apiBase: settings.trongrid?.apiBase || 'https://api.trongrid.io',
+          apiKey: settings.trongrid?.apiKey
+        })
+      }
+
+      return await fetchTronscanAggregated({ watchedAddresses, start, limit })
     }
   )
 

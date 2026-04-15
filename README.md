@@ -12,13 +12,9 @@ ChainTracer is a lightweight **Electron + Vue 3** desktop app for monitoring mul
 - Pagination (“Load more”)
 - Click addresses (From/To + watched list) to **copy** to clipboard
 - Show each watched address **current USDT balance**
-
-## Data source
-
-This app uses **TronGrid**.
-
-- Base URL: `https://api.trongrid.io`
-- API key header: `TRON-PRO-API-KEY`
+- Multiple data sources (switchable in the app)
+  - **Tronscan** (default)
+  - **TronGrid** (optional API key)
 
 ## Quick start
 
@@ -28,25 +24,22 @@ This app uses **TronGrid**.
 npm install
 ```
 
-### 2) Create local config (NOT committed)
-
-Create `chain-tracer.config.json` in the project root (same level as `package.json`).
-
-> This file is **ignored by git** to prevent secret leakage.
-
-You can copy from the example:
-
-```bash
-cp chain-tracer.config.example.json chain-tracer.config.json
-```
-
-Then edit `chain-tracer.config.json` and fill your key.
-
-### 3) Run in development
+### 2) Run in development
 
 ```bash
 npm run dev
 ```
+
+### 3) Select data source (in-app)
+
+Open the sidebar and click **Source**:
+
+- **Tronscan**: no key required (default)
+- **TronGrid**: optionally paste your API key
+
+Notes:
+- The TronGrid API key is stored **locally** under Electron `userData` (on your machine only).
+- The app UI will not display your key after saving (only “set / not set”).
 
 ### 4) Lint / typecheck
 
@@ -61,31 +54,15 @@ npm run typecheck
 npm run build
 ```
 
-## Configuration
-
-- `chain-tracer.config.json` (local only, ignored)
-- `chain-tracer.config.example.json` (committed template)
-
-Example:
-
-```json
-{
-  "trongrid": {
-    "apiBase": "https://api.trongrid.io",
-    "apiKey": "YOUR_TRONGRID_API_KEY"
-  }
-}
-```
-
 ## Privacy / security
 
 - Never commit API keys.
-- `chain-tracer.config.json` is in `.gitignore`.
+- The app stores settings in Electron `userData` (outside this repo).
 - If you ever accidentally publish a key, rotate it immediately.
 
 ## Project structure
 
-- `src/main/` — Electron main process (IPC + TronGrid client)
+- `src/main/` — Electron main process (IPC + data sources)
 - `src/preload/` — `window.api` bridge (IPC invoke)
 - `src/renderer/` — Vue UI
 

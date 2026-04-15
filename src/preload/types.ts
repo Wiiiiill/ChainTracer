@@ -21,6 +21,16 @@ export type UsdtBalance = {
   decimals: number
 }
 
+export type DataSource = 'tronscan' | 'trongrid'
+
+export type PublicSettings = {
+  dataSource: DataSource
+  trongrid: {
+    apiBase: string
+    hasApiKey: boolean
+  }
+}
+
 export type WindowApi = {
   addressesList: () => Promise<WatchedAddress[]>
   addressesAdd: (input: { address: string; label?: string }) => Promise<WatchedAddress[]>
@@ -35,5 +45,10 @@ export type WindowApi = {
     apiBase?: string
   }) => Promise<AggregatedTransferRow[]>
   balancesUsdt: () => Promise<Record<string, UsdtBalance | null>>
+  settingsGet: () => Promise<PublicSettings>
+  settingsUpdate: (input: {
+    dataSource?: DataSource
+    trongrid?: { apiBase?: string; apiKey?: string | null }
+  }) => Promise<PublicSettings>
   clipboardCopy: (text: string) => Promise<boolean>
 }
