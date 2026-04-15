@@ -1,0 +1,6 @@
+{
+  "trongrid": {
+    "apiBase": "https://api.trongrid.io",
+    "apiKey": "YOUR_TRONGRID_API_KEY"
+  }
+}
