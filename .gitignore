@@ -5,3 +5,5 @@ out
 .eslintcache
 *.log*
 chain-tracer.config.json
+.claude/
+.vscode/
