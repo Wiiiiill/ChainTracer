@@ -1,5 +1,7 @@
 # ChainTracer
 
+**Languages:** English | [中文](README.zh-CN.md)
+
 ChainTracer is a lightweight **Electron + Vue 3** desktop app for monitoring multiple **TRON** wallet addresses and viewing **USDT (TRC20)** transfers in one aggregated, filterable table.
 
 ## Features
@@ -38,6 +40,7 @@ Open the sidebar and click **Source**:
 - **TronGrid**: optionally paste your API key
 
 Notes:
+
 - The TronGrid API key is stored **locally** under Electron `userData` (on your machine only).
 - The app UI will not display your key after saving (only “set / not set”).
 
@@ -54,17 +57,23 @@ npm run typecheck
 npm run build
 ```
 
+### 6) Package installers locally (optional)
+
+```bash
+# Windows installer (NSIS)
+npm run build:win
+
+# macOS dmg
+npm run build:mac
+```
+
+
 ## Privacy / security
 
 - Never commit API keys.
 - The app stores settings in Electron `userData` (outside this repo).
 - If you ever accidentally publish a key, rotate it immediately.
 
-## Project structure
-
-- `src/main/` — Electron main process (IPC + data sources)
-- `src/preload/` — `window.api` bridge (IPC invoke)
-- `src/renderer/` — Vue UI
 
 ## License
 

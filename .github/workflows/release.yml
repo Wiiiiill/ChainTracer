@@ -1,0 +1,88 @@
+name: release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      # Override .npmrc mirrors in CI to avoid missing assets (e.g. dmg-builder 404).
+      # Keep the electron-builder binaries mirror, but do NOT override ELECTRON_MIRROR
+      # (otherwise dmg-builder downloads are incorrectly redirected to electron/electron).
+      ELECTRON_BUILDER_BINARIES_MIRROR: https://github.com/electron-userland/electron-builder-binaries/releases/download/
+      npm_config_electron_builder_binaries_mirror: https://github.com/electron-userland/electron-builder-binaries/releases/download/
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Disable project npmrc mirrors (CI)
+        shell: bash
+        run: rm -f .npmrc
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build (electron-vite)
+        run: npm run build
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        env:
+          # Prevent electron-builder from trying to publish on its own.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --publish never
+
+      - name: Package (macOS)
+        if: runner.os == 'macOS'
+        env:
+          # Prevent electron-builder from trying to publish on its own.
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --mac --publish never
+
+      - name: Upload release assets (Windows)
+        if: runner.os == 'Windows'
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: |
+            dist/*.exe
+            dist/*.blockmap
+            dist/latest*.yml
+            dist/*.zip
+
+      - name: Upload release assets (macOS)
+        if: runner.os == 'macOS'
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: |
+            dist/*.dmg
+            dist/*.blockmap
+            dist/latest*.yml
+            dist/*.zip
