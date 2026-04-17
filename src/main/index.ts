@@ -133,6 +133,38 @@ app.whenReady().then(() => {
     }
   )
 
+  ipcMain.handle(
+    'addresses:updateVisibility',
+    async (
+      _evt,
+      input: {
+        address: string
+        visibility?: { in?: boolean; out?: boolean; internal?: boolean } | null
+      }
+    ) => {
+      const address = normalizeTronAddress(input?.address ?? '')
+      const existing = await readWatchedAddresses()
+
+      const vIn = typeof input?.visibility?.in === 'boolean' ? input.visibility.in : undefined
+      const vOut = typeof input?.visibility?.out === 'boolean' ? input.visibility.out : undefined
+      const vInternal =
+        typeof input?.visibility?.internal === 'boolean' ? input.visibility.internal : undefined
+
+      const visibility =
+        vIn === undefined && vOut === undefined && vInternal === undefined
+          ? undefined
+          : { in: vIn, out: vOut, internal: vInternal }
+
+      const next = existing.map((a) => {
+        if (normalizeTronAddress(a.address) !== address) return a
+        return { ...a, visibility }
+      })
+
+      await writeWatchedAddresses(next)
+      return next
+    }
+  )
+
   ipcMain.handle('settings:get', async () => {
     return await readPublicSettings()
   })

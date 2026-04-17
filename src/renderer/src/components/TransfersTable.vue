@@ -38,6 +38,26 @@ const addressLabelMap = computed(() => {
   return m
 })
 
+const visibilityMap = computed(() => {
+  const m = new Map<string, { in: boolean; out: boolean; internal: boolean }>()
+  for (const a of props.addresses) {
+    m.set(a.address, {
+      in: a.visibility?.in ?? true,
+      out: a.visibility?.out ?? true,
+      internal: a.visibility?.internal ?? true
+    })
+  }
+  return m
+})
+
+function isDirectionAllowedForAddress(addr: string, dir: AggregatedTransferRow['direction']): boolean {
+  const v = visibilityMap.value.get(addr)
+  if (!v) return true
+  if (dir === 'IN') return v.in
+  if (dir === 'OUT') return v.out
+  return v.internal
+}
+
 const filteredRows = computed(() => {
   let r = props.rows
 
@@ -47,6 +67,17 @@ const filteredRows = computed(() => {
 
   if (props.direction !== 'ALL') {
     r = r.filter((x) => x.direction === props.direction)
+  }
+
+  // Per-address direction visibility.
+  if (props.selectedAddress) {
+    const addr = props.selectedAddress
+    r = r.filter((x) => isDirectionAllowedForAddress(addr, x.direction))
+  } else {
+    // All-address view: show a row if ANY matched watched address allows this direction.
+    r = r.filter((x) =>
+      x.matchedAddresses.some((a) => isDirectionAllowedForAddress(a, x.direction))
+    )
   }
 
   return r

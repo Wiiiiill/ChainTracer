@@ -8,6 +8,7 @@ const api: WindowApi = {
   addressesAdd: (input) => ipcRenderer.invoke('addresses:add', input),
   addressesRemove: (input) => ipcRenderer.invoke('addresses:remove', input),
   addressesUpdateLabel: (input) => ipcRenderer.invoke('addresses:updateLabel', input),
+  addressesUpdateVisibility: (input) => ipcRenderer.invoke('addresses:updateVisibility', input),
   transfersFetchUsdt: (input) => ipcRenderer.invoke('transfers:fetchUsdt', input),
   balancesUsdt: () => ipcRenderer.invoke('balances:usdt'),
   settingsGet: () => ipcRenderer.invoke('settings:get'),

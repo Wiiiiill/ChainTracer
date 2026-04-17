@@ -18,6 +18,10 @@ const emit = defineEmits<{
   (e: 'addAddress', input: { address: string; label?: string }): void
   (e: 'removeAddress', address: string): void
   (e: 'updateLabel', input: { address: string; label?: string | null }): void
+  (e: 'updateVisibility', input: {
+    address: string
+    visibility?: { in?: boolean; out?: boolean; internal?: boolean } | null
+  }): void
   (
     e: 'updateSettings',
     input: {
@@ -119,6 +123,28 @@ function onAdd(): void {
 function onLabelBlur(address: string, label: string): void {
   const trimmed = label.trim()
   emit('updateLabel', { address, label: trimmed.length ? trimmed : null })
+}
+
+function visIn(a: WatchedAddress): boolean {
+  return a.visibility?.in ?? true
+}
+
+function visOut(a: WatchedAddress): boolean {
+  return a.visibility?.out ?? true
+}
+
+function visInternal(a: WatchedAddress): boolean {
+  return a.visibility?.internal ?? true
+}
+
+function onToggleVisibility(a: WatchedAddress, which: 'in' | 'out' | 'internal', next: boolean): void {
+  const visibility = {
+    in: visIn(a),
+    out: visOut(a),
+    internal: visInternal(a),
+    [which]: next
+  }
+  emit('updateVisibility', { address: a.address, visibility })
 }
 </script>
 
@@ -245,6 +271,39 @@ function onLabelBlur(address: string, label: string): void {
           placeholder="Label"
           @blur="onLabelBlur(a.address, ($event.target as HTMLInputElement).value)"
         />
+
+        <div class="visibility">
+          <label class="vis-item">
+            <input
+              type="checkbox"
+              :checked="visIn(a)"
+              @change="
+                onToggleVisibility(a, 'in', ($event.target as HTMLInputElement).checked)
+              "
+            />
+            <span>IN</span>
+          </label>
+          <label class="vis-item">
+            <input
+              type="checkbox"
+              :checked="visOut(a)"
+              @change="
+                onToggleVisibility(a, 'out', ($event.target as HTMLInputElement).checked)
+              "
+            />
+            <span>OUT</span>
+          </label>
+          <label class="vis-item">
+            <input
+              type="checkbox"
+              :checked="visInternal(a)"
+              @change="
+                onToggleVisibility(a, 'internal', ($event.target as HTMLInputElement).checked)
+              "
+            />
+            <span>INTERNAL</span>
+          </label>
+        </div>
       </div>
     </div>
   </aside>
@@ -342,6 +401,25 @@ function onLabelBlur(address: string, label: string): void {
 
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.visibility {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--ev-c-text-2);
+}
+
+.vis-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.vis-item input {
+  cursor: pointer;
 }
 
 .input {

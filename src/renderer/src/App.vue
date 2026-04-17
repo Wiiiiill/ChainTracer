@@ -101,6 +101,17 @@ async function updateLabel(input: { address: string; label?: string | null }): P
   }
 }
 
+async function updateVisibility(input: {
+  address: string
+  visibility?: { in?: boolean; out?: boolean; internal?: boolean } | null
+}): Promise<void> {
+  try {
+    addresses.value = await window.api.addressesUpdateVisibility(input)
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : String(e)
+  }
+}
+
 async function updateSettings(
   input: Parameters<typeof window.api.settingsUpdate>[0]
 ): Promise<void> {
@@ -137,6 +148,7 @@ onMounted(async () => {
       @add-address="addAddress"
       @remove-address="removeAddress"
       @update-label="updateLabel"
+      @update-visibility="updateVisibility"
       @update-settings="updateSettings"
     />
 

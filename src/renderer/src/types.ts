@@ -1,9 +1,16 @@
-export type WatchedAddress = {
-  address: string
-  label?: string
+export type AddressVisibility = {
+  in?: boolean
+  out?: boolean
+  internal?: boolean
 }
 
 export type DirectionFilter = 'ALL' | 'IN' | 'OUT' | 'INTERNAL'
+
+export type WatchedAddress = {
+  address: string
+  label?: string
+  visibility?: AddressVisibility
+}
 
 export type AggregatedTransferRow = {
   key: string

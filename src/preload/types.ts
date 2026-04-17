@@ -1,6 +1,13 @@
+export type WatchedAddressVisibility = {
+  in?: boolean
+  out?: boolean
+  internal?: boolean
+}
+
 export type WatchedAddress = {
   address: string
   label?: string
+  visibility?: WatchedAddressVisibility
 }
 
 export type AggregatedTransferRow = {
@@ -38,6 +45,14 @@ export type WindowApi = {
   addressesUpdateLabel: (input: {
     address: string
     label?: string | null
+  }) => Promise<WatchedAddress[]>
+  addressesUpdateVisibility: (input: {
+    address: string
+    visibility?: {
+      in?: boolean
+      out?: boolean
+      internal?: boolean
+    } | null
   }) => Promise<WatchedAddress[]>
   transfersFetchUsdt: (input: {
     start?: number
