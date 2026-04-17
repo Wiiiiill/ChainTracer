@@ -7,6 +7,7 @@ ChainTracer is a lightweight **Electron + Vue 3** desktop app for monitoring mul
 ## Features
 
 - Watch multiple TRON addresses (with optional labels)
+- Per-address direction visibility toggles: enable/disable `IN` / `OUT` / `INTERNAL`
 - Aggregated **USDT (TRC20)** transfer table (sorted by time desc)
 - Filters
   - by watched address
